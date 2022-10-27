@@ -1,0 +1,5 @@
+library(tidyverse)
+if (!require("BiocManager", quietly = TRUE))
+  install.packages("BiocManager", version = 3.15)
+library(BiocManager)
+library(magrittr)
