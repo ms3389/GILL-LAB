@@ -1,0 +1,26 @@
+{
+    "id": "455B0611",
+    "path": "~/OneDrive/Work/Gill/Tapestri/Target_Annotation/Targets_To_Amplicons_CSV_Generator.R",
+    "project_path": "Targets_To_Amplicons_CSV_Generator.R",
+    "type": "r_source",
+    "hash": "1371552146",
+    "contents": "",
+    "dirty": false,
+    "created": 1666894704295.0,
+    "source_on_save": false,
+    "relative_order": 1,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "54,0",
+        "scrollLine": "48"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1666894935,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1666894935641,
+    "read_only": false,
+    "read_only_alternatives": []
+}
