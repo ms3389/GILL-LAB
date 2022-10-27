@@ -1,0 +1,134 @@
+---
+title: "CRISPR Off-Target Sites for CD45"
+author: "Joe Jessee"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    theme: cerulean #darkly #for darkmode
+    toc: TRUE
+    fig_caption: TRUE
+bibliography: ["citations.bib"]  
+link-citations: TRUE
+knit: (function(inputFile, encoding) {
+      out_dir <- "Reports";
+      rmarkdown::render(inputFile,
+                        encoding=encoding,
+                        output_dir=file.path(dirname(inputFile), out_dir))})
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(error = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+library(tidyverse)
+library(magrittr)
+library(png)
+library(kableExtra)
+knitr::clean_cache()
+knitr::fig_path("~/Gill_Tapestri/images/")
+```
+
+## New Methodology Description
+
+Per the bioinformatics meeting on 10/20/22 and pursuant to the disposition of the lab report submitted on that day, intronic and/or un-annotated off-target sites will be omitted from the list of necessary amplicons for Tapestri analysis. Herein, the prior analysis will be reproduced including the potential off-target candidates that have three sequence mismatches (the prior analysis included only up to two.) 
+
+
+
+## Pipeline
+
+```{r echo = TRUE}
+wd <- getwd()
+Targets_Dir <- paste(wd, "/Targets.txt", sep = "")
+#Read in data
+Targets <- read.delim(Targets_Dir)
+#Subset Data by sites with 2 or less mismatches
+Targets <- tibble(subset(Targets, subset = Targets$Mismatches <= 3))
+#remove columns unnecessary for Tapestri Amplicon Panel Designer, and match the downstream query for merging
+Targets %<>%
+  dplyr::select('Chromosome', 'Position', 'Direction', 'DNA', 'crRNA', 'Mismatches') %>%
+  mutate_all(~gsub("chr", "", .)) %>%
+  rename(chromosome_name = 'Chromosome') %>% 
+  rename(strand = 'Direction') 
+#Format for downstream merging
+Targets$Position <- as.integer(Targets$Position)
+Targets$strand <- gsub(x = Targets$strand, pattern = "+", replacement = "1", fixed = TRUE)
+Targets$strand <- gsub(x = Targets$strand, pattern = "-", replacement = "-1", fixed = TRUE)
+Targets$strand <- as.integer(Targets$strand)
+#View(Targets)
+head(Targets) %>%
+  kbl() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+```
+
+
+```{r echo = TRUE, cache=TRUE}
+#Use biomaRt to generate metadata
+require(biomaRt)
+ensembl <- useMart("ensembl", dataset="hsapiens_gene_ensembl")
+attr <- c("chromosome_name", "strand", "start_position", "end_position", "hgnc_symbol", "description")
+bm <- getBM(attributes = attr, mart = ensembl)
+head(bm)%>%
+  kbl() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+```
+
+```{r echo = TRUE, cache=TRUE}
+#Use biomaRt to generate metadata
+require(biomaRt)
+ensembl <- useMart("ensembl", dataset="hsapiens_gene_ensembl")
+attr <- c("chromosome_name", "strand", "start_position", "end_position", "hgnc_symbol", "description")
+bm <- getBM(attributes = attr, mart = ensembl)
+head(bm)%>%
+  kbl() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+```
+
+```{r echo = TRUE}
+#create function for finding matches for targets within gene ranges
+is_X_between_Y_n_Z <- function(x, y, z) {
+  #dependencies
+  require(IRanges)
+  #create single-digit IRanges object
+  x = IRanges(x)
+  #create IRanges object from start and end numbers
+  r = IRanges(start = y, end = z)
+  #return only y and z pairs that correspond to positive matches with x
+  Ans = IRanges::as.data.frame(IRanges::findOverlapPairs(x, r, type = "within"))
+  return(Ans)
+}
+is_X_between_Y_n_Z(Targets$Position, bm$start_position, bm$end_position) -> Pairs
+#Format Pairs Table and remove unnecessary columns
+Pairs %>% 
+  dplyr::select('first.start', 'second.start', 'second.end') -> Pairs
+#rename columns
+Pairs %>% 
+  rename(first.start = 'Position') %>%
+  rename(second.start = 'start_position') %>% 
+  rename(second.end = 'end_position') -> Pairs
+head(Pairs)%>%
+  kbl() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+```
+
+```{r echo = TRUE}
+#Combine Pair info with biomaRt annotations
+left_join(Pairs, bm, by = c('start_position', 'end_position')) -> Pairs
+#Combine Target info with Pairs Info
+left_join(x = Targets, Pairs, by = c('Position', 'strand', 'chromosome_name')) -> Targets
+# View(Targets)
+Targets%>%
+  kbl() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+```
+
+<br>
+
+## Conclusion
+There are only 17 of the 40 sites that are annotated, and therefore those sites are feasible to develop amplicons for.
+
+
+
+
+
+
